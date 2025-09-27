@@ -1,9 +1,9 @@
 import gradio as gr
-import pathlib
 import torch
-from torchvision import transforms
 from PIL import Image
 from MultiClassifier import FakeImageClassifier, inference_transform
+
+CLASS_NAMES = ["Real", "Sana 1.5", "SD 1.5", "SD 3.5"]
 
 def load_model(model_path, device):
     model = FakeImageClassifier()
@@ -17,27 +17,37 @@ def predict_image(model, image_path, device):
     image = Image.open(image_path).convert("RGB")
     image = inference_transform(image).unsqueeze(0).to(device)  # Add batch dimension
 
-    # Make prediction
     with torch.no_grad():
-        outputs = model(image)
-        rounded_outputs = torch.round(outputs, decimals=2)
+        outputs = model(image)  # raw logits
+        probs = torch.softmax(outputs, dim=1)[0].cpu().numpy()
 
-        print(rounded_outputs)
-        predicted_class = torch.argmax(outputs, dim=1).item()
+        print("Prediction probabilities:")
+        for name, prob in zip(CLASS_NAMES, probs):
+            print(f"  {name}: {prob*100:.2f}%")
 
-    return predicted_class
+        predicted_class = int(probs.argmax())
+        predicted_percent = probs[predicted_class] * 100
+        print(f"Predicted class: {CLASS_NAMES[predicted_class]} ({predicted_percent:.2f}%)")
 
+    return predicted_class, probs
+
+def predict_image_gradio(image_path):
+    predicted_class, probs = predict_image(model, image_path, device)
+    probability_lines = "\n".join(
+        f"{name}: {prob*100:.2f}%" for name, prob in zip(CLASS_NAMES, probs)
+    )
+    return f"Predicted class: {CLASS_NAMES[predicted_class]}\n\nProbabilities:\n{probability_lines}"
 
 # Set model path and device
-model_path = "path/to/your/model.pth"  # <-- Update this path
+model_path = "quadmodel.pth"  
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = load_model(model_path, device)
 
 iface = gr.Interface(
-    fn=predict_image,
-    inputs=gr.Image(type="filepath"),
-    outputs="text",
+    fn=predict_image_gradio,
+    inputs=gr.Image(type="filepath", label="Upload Image"),
+    outputs=gr.Textbox(lines=10, label="Prediction"),
     title="Fake Image Classifier"
 )
 
-iface.launch()
+iface.launch(inbrowser=True)

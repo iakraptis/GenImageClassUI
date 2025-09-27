@@ -1,2 +1,5 @@
 # GenImageClassUI
-A simple GUI for a fake image detector project.
+A simple GUI for a fake photo detector project.
+
+
+
