@@ -3,7 +3,9 @@ A simple GUI for a fake photo detector project. The model has been trained on im
 
 This project is a simple GUI using Gradio that loads the already trained model, and provides a User Interface where an end user can use their own photos and check if they are real or generated through the use of AI.
 
+## Model
 
+The model training procedure and project page is accessible here: [project page](https://github.com/iakraptis/GenImageClass)
 
 
 

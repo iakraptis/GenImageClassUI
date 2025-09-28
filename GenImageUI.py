@@ -33,20 +33,20 @@ def predict_image(model, image_path, device):
 
 def predict_image_gradio(image_path):
     predicted_class, probs = predict_image(model, image_path, device)
-    probability_lines = "\n".join(
-        f"{name}: {prob*100:.2f}%" for name, prob in zip(CLASS_NAMES, probs)
-    )
-    return f"Predicted class: {CLASS_NAMES[predicted_class]}\n\nProbabilities:\n{probability_lines}"
+    percentages = (probs * 100).tolist()
+    return (CLASS_NAMES[predicted_class], *percentages)
 
 # Set model path and device
 model_path = "quadmodel.pth"  
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = load_model(model_path, device)
 
+probability_outputs = [gr.Number(label=f"{name} %") for name in CLASS_NAMES]
+
 iface = gr.Interface(
     fn=predict_image_gradio,
     inputs=gr.Image(type="filepath", label="Upload Image"),
-    outputs=gr.Textbox(lines=10, label="Prediction"),
+    outputs=[gr.Textbox(label="Predicted Class")] + probability_outputs,
     title="Fake Image Classifier"
 )
 
